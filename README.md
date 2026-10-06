@@ -16,7 +16,7 @@ npm run dev        # http://localhost:5173
 | `npm run dev` | Local development server, including the lead form (dry run) |
 | `npm run build` | Production build into `dist/` (what Netlify serves) |
 | `npm run preview` | Serve the production build locally |
-| `npm run build:single` | One self-contained HTML file in `dist-preview/` for sharing a preview (lead form does not send) |
+| `npm run build:single` | One self-contained HTML file in `dist-preview/` for sharing a preview (lead form does not send; uses uncompressed model copies) |
 | `npm run models:inspect -- file.glb` | List a model's part and material names |
 | `npm run models:optimize -- in.glb out.glb` | Compress a raw model export for the web |
 | `npm run models:placeholder` | Regenerate the placeholder models |

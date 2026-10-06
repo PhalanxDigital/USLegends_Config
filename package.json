@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:single": "vite build --mode singlefile",
+    "build:single": "node scripts/make-preview-models.mjs && vite build --mode singlefile",
     "preview": "vite preview",
     "models:placeholder": "node scripts/make-placeholder-models.mjs",
     "models:inspect": "node scripts/inspect-model.mjs",
