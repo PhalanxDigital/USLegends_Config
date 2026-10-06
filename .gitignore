@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-preview/
+.netlify/
+.DS_Store
+*.log
+# raw source models stay out of git until optimized (see README)
+models-source/

@@ -1,0 +1,51 @@
+@font-face {
+  font-family: 'Alliance';
+  src:
+    local('Alliance No 2 Regular'),
+    url('./assets/fonts/AllianceNo2-Regular.woff2') format('woff2'),
+    url('./assets/fonts/AllianceNo2-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+html,
+body {
+  margin: 0;
+  background-color: #151616;
+  font-family: 'Exo 2', sans-serif;
+  color: rgb(229, 229, 229);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  border: 1px solid rgba(229, 229, 229, 0.2);
+  background: none;
+  padding: 20px 30px;
+  border-radius: 5px;
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 14px;
+  text-transform: uppercase;
+  color: #ebebeb;
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 2px solid rgb(245, 53, 41);
+  outline-offset: 2px;
+}
+button:disabled {
+  cursor: default;
+}
+
+h3 {
+  font-family: 'Alliance', sans-serif;
+  font-size: clamp(1.125rem, 1.05rem + 0.375vw, 1.5rem);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+  text-transform: capitalize;
+  color: #ebebeb;
+  text-align: center;
+}
