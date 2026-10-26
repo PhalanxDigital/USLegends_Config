@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "models:placeholder": "node scripts/make-placeholder-models.mjs",
     "models:inspect": "node scripts/inspect-model.mjs",
-    "models:optimize": "node scripts/optimize-model.mjs"
+    "models:optimize": "node scripts/optimize-model.mjs",
+    "models:split": "node scripts/split-c4d-export.mjs"
   },
   "engines": {
     "node": ">=20"
