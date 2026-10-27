@@ -7,3 +7,4 @@ dist-preview/
 # raw source models stay out of git until optimized (see README)
 models-source/
 src/assets/models-preview/
+dist-demo/

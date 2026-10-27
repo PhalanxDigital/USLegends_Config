@@ -12,7 +12,8 @@
     "models:inspect": "node scripts/inspect-model.mjs",
     "models:optimize": "node scripts/optimize-model.mjs",
     "models:c4d": "node --max-old-space-size=8192 scripts/build-c4d-models.mjs",
-    "build:preview": "node scripts/make-preview-models.mjs && vite build --mode preview && node -e \"require('fs').rmSync('src/assets/models-preview',{recursive:true,force:true})\""
+    "build:preview": "node scripts/make-preview-models.mjs && vite build --mode preview && node -e \"require('fs').rmSync('src/assets/models-preview',{recursive:true,force:true})\"",
+    "build:demo": "vite build --mode demo"
   },
   "engines": {
     "node": ">=20"

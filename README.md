@@ -16,6 +16,7 @@ npm run dev        # http://localhost:5173
 | `npm run dev` | Local development server, including the lead form (dry run) |
 | `npm run build` | Production build into `dist/` (what Netlify serves) |
 | `npm run preview` | Serve the production build locally |
+| `npm run build:demo` | Site in `dist-demo/` for a Netlify drag-and-drop deploy. Drag-and-drop deploys can't run the lead function, so the form confirms without sending |
 | `npm run build:preview` | Static copy in `dist-preview/` for sharing a preview without a server, shaped for strict hosts such as a claude.ai preview page (lead form does not send) |
 | `npm run models:c4d -- export.gltf tex/` | Build `sedan.glb` and `coupe.glb` from the Cinema 4D export ([details](#rebuilding-the-models-from-cinema-4d)) |
 | `npm run models:inspect -- file.glb` | List a model's part and material names |

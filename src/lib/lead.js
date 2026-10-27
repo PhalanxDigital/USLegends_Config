@@ -20,8 +20,8 @@ export function buildLeadPayload(car, build, customerData) {
 
 /** @returns {Promise<{ ok: boolean, preview?: boolean }>} */
 export async function submitLead(payload) {
-  // The static preview has no server, so nothing is sent.
-  if (import.meta.env.MODE === 'preview') {
+  // The static preview and the drag-and-drop demo have no lead server, so nothing is sent.
+  if (import.meta.env.MODE === 'preview' || import.meta.env.MODE === 'demo') {
     console.info('[preview] Lead not sent. Payload would be:', payload);
     await new Promise((r) => setTimeout(r, 500));
     return { ok: true, preview: true };
