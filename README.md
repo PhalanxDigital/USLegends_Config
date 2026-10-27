@@ -55,7 +55,8 @@ The sedan and coupe come from one Cinema 4D scene, **Legend Cars.c4d**. It holds
    - keeps only that car's parts
    - applies the web materials
    - merges small pieces
-   - simplifies the geometry from about 4.2 million to about 430,000 triangles (about 3.9 MB per car)
+   - simplifies the geometry from about 4.2 million to about 1.25 million triangles (about 10 MB per car), keeping tires, wheels and paint at nearly full detail
+   - recalculates smooth normals on the paint, so reflections stay clean
    - turns the car to face +X on the ground
 3. **If the scene changes**, check these:
    - New or renamed materials: map their numbers in `scripts/c4d-materials.mjs`. The previews and `materials.txt` show what each number is.
