@@ -133,6 +133,7 @@ Optional environment variables (*Site configuration › Environment variables*):
 
 - [ ] Review the web materials against the original renders. The Legends materials were matched by eye from the Octane material previews, and the Bandolero's were adjusted from the file's own; a few small parts may need a different finish (`scripts/c4d-materials.mjs`).
 - [ ] Look-development against the current Sketchfab rendering (lighting, reflections, paint finish).
-- [ ] Confirm with US Legends that their endpoint accepts the new `car` field and the corrected "34 Chevy" label.
+- [ ] Confirm with US Legends that their endpoint accepts the new `car` field, the corrected "34 Chevy" label and Bandolero leads (empty `parts`). Send one real test lead after the first production deploy.
+- [ ] Around 800 px wide (tablet portrait), the color picker overlaps the "Request a build" button.
 - [ ] Optional label check: "Basset" vs the brand name "Bassett" (it's sent with leads).
 - [ ] Optional: attach a rendered image of the build to each lead (`viewer.snapshot()` is ready).
