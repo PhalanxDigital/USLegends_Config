@@ -2,7 +2,7 @@
 
 A rebuild of the [Sketchfab-based configurator](https://github.com/tattooprojects/US-Legends-Configurator) with the same interface and interactions, running on [Three.js](https://threejs.org) instead of Sketchfab. There is no Sketchfab account, iframe or watermark dependency. Everything is served from this site.
 
-> **Status:** the Legends Sedan and Legends Coupe use the real models, built from the artist's Cinema 4D scene. The Bandolero still uses a generated stand-in, because it isn't in the Cinema 4D files we have. See [Rebuilding the models from Cinema 4D](#rebuilding-the-models-from-cinema-4d).
+> **Status:** all three cars use the artist's real models. The Legends Sedan and Legends Coupe are built from the Cinema 4D scene, and the Bandolero from the artist's own glTF export. See [Rebuilding the models](#rebuilding-the-models-from-cinema-4d).
 
 ## Run it
 
@@ -19,9 +19,9 @@ npm run dev        # http://localhost:5173
 | `npm run build:demo` | Site in `dist-demo/` for a Netlify drag-and-drop deploy. Drag-and-drop deploys can't run the lead function, so the form confirms without sending |
 | `npm run build:preview` | Static copy in `dist-preview/` for sharing a preview without a server, shaped for strict hosts such as a claude.ai preview page (lead form does not send) |
 | `npm run models:c4d -- export.gltf tex/` | Build `sedan.glb` and `coupe.glb` from the Cinema 4D export ([details](#rebuilding-the-models-from-cinema-4d)) |
+| `npm run models:bandolero -- Bandolero.gltf` | Build `bandolero.glb` from the artist's Bandolero export ([details](#the-bandolero)) |
 | `npm run models:inspect -- file.glb` | List a model's part and material names |
 | `npm run models:optimize -- in.glb out.glb` | Compress any other raw model export for the web |
-| `npm run models:placeholder` | Regenerate the stand-in models (the Bandolero still uses one) |
 
 ## How it's organized
 
@@ -33,9 +33,9 @@ src/lib/lead.js               ← builds and sends the lead
 netlify/functions/submit.mjs  ← forwards leads to uslegendcars.com
 src/assets/models/            ← one .glb per car
 src/assets/thumbs/            ← option thumbnails
-scripts/                      ← model tools (Cinema 4D build, inspect, optimize, stand-ins)
+scripts/                      ← model tools (Cinema 4D build, Bandolero build, inspect, optimize)
 scripts/cinema4d/             ← export script to run inside Cinema 4D
-scripts/c4d-materials.mjs     ← web materials for the Cinema 4D scene
+scripts/c4d-materials.mjs     ← web materials for all three cars
 ```
 
 ### How the 3D works (same idea as the Sketchfab build)
@@ -63,7 +63,26 @@ The sedan and coupe come from one Cinema 4D scene, **Legend Cars.c4d**. It holds
    - New options: add them to `src/lib/config/cars.js`. Their `node` is the Cinema 4D object name; `npm run models:inspect -- src/assets/models/sedan.glb` lists the names.
    - Too much or too little detail: adjust `simplifyError` in `scripts/build-c4d-models.mjs`.
 
-Other models (the Bandolero, or anything exported straight to glTF) go through `npm run models:optimize` instead. If one loads facing the wrong way, set `modelRotationDeg: [x, y, z]` on that car in the config; the app expects the front toward +X with Y up. Remove `placeholderModel: true` when a real model replaces a stand-in.
+### The Bandolero
+
+The Bandolero isn't in the Cinema 4D scene. The artist exported it separately as **Bandolero.gltf** (in the `Bandolero` folder of the model files), with ordinary materials instead of Octane, so no Cinema 4D step is needed. (`BandoleroBody.gltf` and `BandoleroWheels.gltf` in the same folder are older partial exports and aren't used.)
+
+```bash
+npm run models:bandolero -- "path/to/Bandolero/Bandolero.gltf"
+```
+
+This writes `src/assets/models/bandolero.glb` (about 1.7 MB). It:
+- groups the car into five named parts: BODY, CHASSIS, WHEELS, WINDSHIELD, BODY FASTENERS
+- swaps the file's materials for web materials (`BANDOLERO_TO_WEB` in `scripts/c4d-materials.mjs`); the Hoosier sidewall keeps the file's own textures
+- simplifies about 985,000 triangles to about 200,000, keeping tires and paint at nearly full detail
+- recalculates smooth normals on the paint
+- scales it to the Legends cars' units and turns it to face +X on the ground
+
+The Bandolero has no part options, only body color, so it has no hotspots.
+
+### Any other model
+
+Anything else exported straight to glTF can go through `npm run models:optimize`. If a model loads facing the wrong way, set `modelRotationDeg: [x, y, z]` on that car in the config; the app expects the front toward +X with Y up.
 
 Open the site with `?debug` (for example `http://localhost:5173/?debug`) to print every part and material name in the browser console.
 
@@ -109,8 +128,7 @@ The variable controls where submissions go:
 
 ## Open items
 
-- [ ] A real Bandolero model. It isn't in the Cinema 4D files; ask the artist, or download it from the Sketchfab account (needs a Pro plan).
-- [ ] Review the web materials against the original renders. They were matched by eye from the Octane material previews, and a few small parts may need a different finish (`scripts/c4d-materials.mjs`).
+- [ ] Review the web materials against the original renders. The Legends materials were matched by eye from the Octane material previews, and the Bandolero's were adjusted from the file's own; a few small parts may need a different finish (`scripts/c4d-materials.mjs`).
 - [ ] Look-development against the current Sketchfab rendering (lighting, reflections, paint finish).
 - [ ] Confirm with US Legends that their endpoint accepts the new `car` field and the corrected "34 Chevy" label.
 - [ ] Optional label check: "Basset" vs the brand name "Bassett" (it's sent with leads).

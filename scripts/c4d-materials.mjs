@@ -28,6 +28,7 @@ export const WEB_MATERIALS = {
   BRASS: { color: [0.78, 0.62, 0.36], metal: 1.0, rough: 0.35 },
   BRONZE: { color: [0.36, 0.31, 0.24], metal: 0.7, rough: 0.45 },
   GLASS: { color: [0.06, 0.07, 0.08], metal: 0.0, rough: 0.05, alpha: 0.35 },
+  'TINTED GLASS': { color: [0.012, 0.012, 0.014], metal: 0.0, rough: 0.04 },
   'AMBER LENS': { color: [0.85, 0.6, 0.25], metal: 0.0, rough: 0.15, alpha: 0.7 },
   'STRIPE YELLOW': { color: [1.0, 0.72, 0.04], metal: 0.0, rough: 0.3 },
   RED: { color: [0.8, 0.03, 0.03], metal: 0.0, rough: 0.3 },
@@ -41,6 +42,27 @@ export const WEB_MATERIALS = {
   'WHITE GLOSS': { color: [0.9, 0.9, 0.9], metal: 0.0, rough: 0.2 },
   'WHITE MATTE': { color: [0.85, 0.85, 0.85], metal: 0.0, rough: 0.8 },
   'LIGHT GRAY': { color: [0.7, 0.7, 0.7], metal: 0.0, rough: 0.7 },
+};
+
+/**
+ * Bandolero (Bandolero.gltf, exported separately with Cinema 4D's own materials): source material
+ * name -> web material. The source values were close, but several are pure-black metal, which
+ * renders as flat black with no reflections. Unlisted names fall back to DARK MATTE.
+ */
+export const BANDOLERO_TO_WEB = {
+  BODY: 'BODY PAINT',
+  'PBR.2': 'TIRE SIDEWALL', // Hoosier sidewall; keeps the file's own base color and normal textures
+  TIRE: 'TIRE RUBBER', // treads, mirror backs
+  'Dark Metal': 'DARK ALUMINUM', // wheel centers
+  'BRIGHT METAL': 'BRUSHED ALUMINUM', // rim lips, seat, fasteners
+  'BRIGHT METAL.1': 'BRONZE', // lug nuts, suspension hardware
+  'BRIGHT METAL.2': 'CHROME', // shock shafts
+  'BLACK PIPE': 'BLACK GLOSS', // roll cage, bumpers, rims, steering wheel
+  'Red Steering Column': 'RED',
+  'BLUE SHOCK': 'BLUE', // coil springs
+  Mirror: 'CHROME',
+  'BLACK GLASS': 'TINTED GLASS', // windshield
+  GLASS: 'GLASS',
 };
 
 /** Cinema 4D material number -> web material. Unlisted numbers fall back to DARK MATTE. */

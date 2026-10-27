@@ -12,12 +12,12 @@
  *   z: right side to left side).
  * - Optional per car: `modelRotationDeg: [x, y, z]` if a model loads facing the
  *   wrong way (the app expects the front toward +X, Y up),
- *   `paintKeepsTexture: true` to keep a paint material's texture when recoloring, and
- *   `placeholderModel: true` to show a "placeholder model" notice on the viewer.
+ *   and `paintKeepsTexture: true` to keep a paint material's texture when recoloring.
  * - Optional per category: `drawOnTop: true` makes its parts win where they overlap other parts.
  *
  * The sedan and coupe models are built from the artist's Cinema 4D scene by
- * `npm run models:c4d` (see README). Their part names are the Cinema 4D object names.
+ * `npm run models:c4d`, and the Bandolero from the artist's Bandolero.gltf by
+ * `npm run models:bandolero` (see README). Part names are the Cinema 4D object names.
  */
 import { thumb, model } from './assets.js';
 
@@ -99,11 +99,11 @@ export const CARS = [
     tabLabel: 'Bandolero',
     leadName: 'Bandolero',
     model: model('bandolero.glb'),
-    // Not in the Cinema 4D files we have; still the generated stand-in.
-    placeholderModel: true,
+    // Built from the artist's Bandolero.gltf by `npm run models:bandolero` (see README). Color only, no part options.
     paintMaterials: ['BODY PAINT'],
     categories: [],
-    camera: { ...CAMERA },
+    // a little further back than the Legends cars, so the front bumper clears the color picker
+    camera: { ...CAMERA, distance: 1.07 },
   },
   {
     id: 'coupe',

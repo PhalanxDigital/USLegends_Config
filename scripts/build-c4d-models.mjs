@@ -15,15 +15,14 @@
  */
 import { NodeIO, getBounds } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, KHRMaterialsClearcoat } from '@gltf-transform/extensions';
-import { dedup, prune, weld, quantize, meshopt, textureCompress, join, simplifyPrimitive, unpartition, transformPrimitive } from '@gltf-transform/functions';
+import { dedup, prune, weld, quantize, meshopt, textureCompress, join, simplifyPrimitive, unpartition } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
-import * as THREE from 'three';
-import { toCreasedNormals, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import sharp from 'sharp';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WEB_MATERIALS, C4D_TO_WEB } from './c4d-materials.mjs';
+import { triCount, disposeTree, bakeIntoGroup, recomputeNormals, createWebMaterials } from './lib/mesh-utils.mjs';
 
 const args = process.argv.slice(2);
 const outIdx = args.indexOf('--out');
@@ -57,34 +56,7 @@ const io = new NodeIO()
   .registerExtensions(ALL_EXTENSIONS)
   .registerDependencies({ 'meshopt.encoder': MeshoptEncoder, 'meshopt.decoder': MeshoptDecoder });
 
-const triCount = (node) => {
-  let n = 0;
-  node.traverse((x) => {
-    const m = x.getMesh();
-    if (m) for (const p of m.listPrimitives()) n += (p.getIndices()?.getCount() ?? p.getAttribute('POSITION').getCount()) / 3;
-  });
-  return Math.round(n);
-};
-const disposeTree = (node) => {
-  for (const c of node.listChildren()) disposeTree(c);
-  node.dispose();
-};
-
 const PAINT_CREASE_DEG = 40;
-
-/** Replaces a primitive's normals with smooth ones, splitting vertices only at sharp creases. */
-function recomputeNormals(doc, prim, creaseDeg) {
-  const pos = prim.getAttribute('POSITION');
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos.getArray()), 3));
-  if (prim.getIndices()) geo.setIndex(new THREE.BufferAttribute(new Uint32Array(prim.getIndices().getArray()), 1));
-  const creased = mergeVertices(toCreasedNormals(geo, (creaseDeg * Math.PI) / 180), 1e-6);
-  const buffer = pos.getBuffer();
-  for (const s of prim.listSemantics()) if (s !== 'POSITION' && s !== 'NORMAL') prim.setAttribute(s, null);
-  prim.setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(new Float32Array(creased.attributes.position.array)).setBuffer(buffer));
-  prim.setAttribute('NORMAL', doc.createAccessor().setType('VEC3').setArray(new Float32Array(creased.attributes.normal.array)).setBuffer(buffer));
-  prim.setIndices(doc.createAccessor().setType('SCALAR').setArray(new Uint32Array(creased.index.array)).setBuffer(buffer));
-}
 
 /** Tire sidewall textures: base color, normal, and roughness packed into glTF's metal/rough layout. */
 async function tireTextures(doc) {
@@ -114,18 +86,7 @@ for (const car of Object.keys(ONLY)) {
   const groups = cars.listChildren().flatMap((n) => (CONTAINERS.includes(n.getName()) ? n.listChildren() : [n]));
 
   // 2. web materials
-  const clearcoat = doc.createExtension(KHRMaterialsClearcoat);
-  const web = {};
-  for (const [name, d] of Object.entries(WEB_MATERIALS)) {
-    const m = doc.createMaterial(name)
-      .setBaseColorFactor([...d.color, d.alpha ?? 1])
-      .setMetallicFactor(d.metal)
-      .setRoughnessFactor(d.rough)
-      .setDoubleSided(true);
-    if (d.alpha !== undefined && d.alpha < 1) m.setAlphaMode('BLEND');
-    if (d.clearcoat) m.setExtension('KHR_materials_clearcoat', clearcoat.createClearcoat().setClearcoatFactor(d.clearcoat).setClearcoatRoughnessFactor(d.clearcoatRough ?? 0.05));
-    web[name] = m;
-  }
+  const web = createWebMaterials(doc, WEB_MATERIALS, doc.createExtension(KHRMaterialsClearcoat));
   const unknown = new Set();
   for (const mesh of root.listMeshes())
     for (const prim of mesh.listPrimitives()) {
@@ -148,30 +109,7 @@ for (const car of Object.keys(ONLY)) {
 
   // 3. bake each option's pieces into the option's own frame (so merged meshes get tight bounds),
   //    then merge pieces that share a material
-  const m4 = new THREE.Matrix4();
-  const deepClone = (prim) => {
-    const p = prim.clone();
-    for (const s of p.listSemantics()) p.setAttribute(s, p.getAttribute(s).clone());
-    if (p.getIndices()) p.setIndices(p.getIndices().clone());
-    return p;
-  };
-  for (const g of groups) {
-    const inv = new THREE.Matrix4().fromArray(g.getWorldMatrix()).invert();
-    const pieces = [];
-    g.traverse((n) => {
-      if (n !== g && n.getMesh()) pieces.push([n.getMesh(), m4.copy(inv).multiply(new THREE.Matrix4().fromArray(n.getWorldMatrix())).toArray()]);
-    });
-    for (const c of g.listChildren()) disposeTree(c);
-    for (const [mesh, matrix] of pieces) {
-      const baked = doc.createMesh('');
-      for (const prim of mesh.listPrimitives()) {
-        const p = deepClone(prim);
-        transformPrimitive(p, matrix);
-        baked.addPrimitive(p);
-      }
-      g.addChild(doc.createNode('').setMesh(baked));
-    }
-  }
+  for (const g of groups) bakeIntoGroup(doc, g);
   await doc.transform(prune(), dedup({ keepUniqueNames: true }), join({ keepNamed: false }), weld());
 
   // 4. simplify, with tolerances tight enough that silhouettes and reflections stay smooth

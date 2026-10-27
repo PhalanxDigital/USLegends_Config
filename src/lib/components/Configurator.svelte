@@ -113,10 +113,6 @@
     {:else if loadError}
       <div class="status" role="alert"><p>The 3D model couldn't load. Please refresh the page.</p></div>
     {/if}
-
-    {#if car.placeholderModel}
-      <p class="placeholder-note">Placeholder 3D model · final models pending</p>
-    {/if}
   </div>
 
   {#if !compact && categories.length}
@@ -293,20 +289,6 @@
     background: rgb(245, 53, 41);
     transition: width 0.2s;
   }
-  .placeholder-note {
-    position: absolute;
-    top: 12px;
-    left: 16px;
-    margin: 0;
-    padding: 5px 10px;
-    border: 1px solid rgba(229, 229, 229, 0.2);
-    border-radius: 999px;
-    font-size: 11px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: rgba(235, 235, 235, 0.6);
-    pointer-events: none;
-  }
 
   .controls {
     display: flex;
@@ -475,11 +457,6 @@
     }
     .viewer {
       height: 52vh;
-    }
-    .placeholder-note {
-      left: auto;
-      right: 12px;
-      font-size: 10px;
     }
     .three-sixty-label {
       top: 17%;
