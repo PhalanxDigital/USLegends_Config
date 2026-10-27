@@ -116,6 +116,9 @@
   </div>
 
   {#if !compact && categories.length}
+    {#if !activeCategory}
+      <p class="hint"><span class="hint-dot" aria-hidden="true"></span>Click a hotspot on the car to change its parts.</p>
+    {/if}
     <aside class="controls" aria-live="polite">
       {#if activeCategory}
         <h3>{activeCategory.title}</h3>
@@ -126,8 +129,6 @@
             {option.label}
           </button>
         {/each}
-      {:else}
-        <p class="hint">Click a hotspot on the car to change its parts.</p>
       {/if}
     </aside>
   {/if}
@@ -321,11 +322,30 @@
     max-height: 11vh;
     object-fit: contain;
   }
+  /* shown until a hotspot is picked: top right of the viewer, lined up with the color picker below */
   .hint {
-    font-size: 13px;
-    line-height: 1.5;
-    text-align: center;
-    color: rgba(235, 235, 235, 0.55);
+    position: absolute;
+    top: 28px;
+    right: 5%;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 320px;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
+    color: rgba(235, 235, 235, 0.8);
+    pointer-events: none;
+  }
+  /* a small copy of a hotspot dot, so the hint points at what to click */
+  .hint-dot {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: rgba(21, 22, 22, 0.25);
   }
 
   .button-bar {

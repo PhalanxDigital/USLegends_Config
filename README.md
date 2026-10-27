@@ -99,21 +99,24 @@ The form posts to `/api/submit`, a Netlify Function that forwards to US Legends.
 }
 ```
 
-Set these in Netlify (*Site configuration › Environment variables*):
+It goes to the same place, the same way, as the Sketchfab build: the site's own `/api/submit` posts the lead server-side to `https://www.uslegendcars.com/car-builder.cfc?method=process` with the same `Origin` header (`https://usl-car-builder.netlify.app`). Neither build emails anyone itself; US Legends' system receives the lead and decides who gets it.
+
+Where submissions go depends on the deploy:
+
+- **Production site:** forwarded to US Legends. Nothing needs to be set up.
+- **Deploy previews, branch deploys and local dev:** nothing is forwarded (dry run), so testing never sends fake leads to US Legends. The form still shows the thank-you message.
+- **Drag-and-drop deploys (`npm run build:demo`):** can't run the function, so nothing is sent. Use these for showing the site only.
+
+Optional environment variables (*Site configuration › Environment variables*):
 
 | Variable | Value |
 |---|---|
-| `LEAD_ENDPOINT_URL` | `https://www.uslegendcars.com/car-builder.cfc?method=process` |
-| `LEAD_ORIGIN` | Optional. The `Origin` header to send. Defaults to `https://usl-car-builder.netlify.app`, which the old build sent. |
-
-The variable controls where submissions go:
-
-- **Unset, locally or on preview deploys:** nothing is forwarded (dry run), so testing never sends fake leads to US Legends.
-- **Unset on the production site:** submissions fail with an error instead of being silently dropped.
+| `LEAD_ENDPOINT_URL` | Overrides where leads go. Setting it on a preview sends that preview's leads for real, for an end-to-end test. |
+| `LEAD_ORIGIN` | The `Origin` header to send. Defaults to `https://usl-car-builder.netlify.app`, which the old build sent. |
 
 ## Deploy (Netlify)
 
-`netlify.toml` is included: the build command is `npm run build`, the publish folder is `dist`, and functions live in `netlify/functions`. To deploy, connect the repo in Netlify and set the environment variables above.
+`netlify.toml` is included: the build command is `npm run build`, the publish folder is `dist`, and functions live in `netlify/functions`. To deploy with working leads, connect the repo in Netlify (*Add new site › Import an existing project*); no settings are needed.
 
 ## Changes from the Sketchfab build
 

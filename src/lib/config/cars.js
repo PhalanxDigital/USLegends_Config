@@ -9,7 +9,8 @@
  *   the lead if it should differ from the label.
  * - `anchor` places a category's hotspot dot: [x, y, z] from 0 to 1 inside the
  *   bounding box of the selected part (x: rear to front, y: bottom to top,
- *   z: right side to left side).
+ *   z: right side to left side). An option can have its own `anchor` when its
+ *   part sits somewhere else (the two exhausts exit in different places).
  * - Optional per car: `modelRotationDeg: [x, y, z]` if a model loads facing the
  *   wrong way (the app expects the front toward +X, Y up),
  *   and `paintKeepsTexture: true` to keep a paint material's texture when recoloring.
@@ -83,10 +84,11 @@ const LEGENDS_EXHAUSTS = {
   id: 'exhaust',
   title: 'Exhausts',
   leadKey: 'exhaust',
-  anchor: [0.4, 0.5, 0.0],
   options: [
-    { id: 'long', label: 'Long Exhaust', node: 'LONG EXHAUST' },
-    { id: 'short', label: 'Short Exhaust', node: 'SHORT EXHAUST' },
+    // on the pipe where it comes out behind the rear wheel
+    { id: 'long', label: 'Long Exhaust', node: 'LONG EXHAUST', anchor: [0.07, 0.46, 0.14] },
+    // on the pipe where it comes out low, behind the front wheel
+    { id: 'short', label: 'Short Exhaust', node: 'SHORT EXHAUST', anchor: [0.04, 0.1, 0.14] },
   ],
 };
 
