@@ -14,7 +14,6 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 
 const DEG = Math.PI / 180;
 
@@ -151,19 +150,55 @@ export class CarViewer {
     return true;
   }
 
-  loadGLTF(url, onProgress) {
+  async loadGLTF(url, onProgress) {
     const loader = new GLTFLoader();
+    if (/\.json(\?|#|$)/.test(url)) return this.loadPreviewGLTF(loader, url, onProgress);
+    // The production models are Meshopt-compressed. The decoder (WebAssembly) loads only when needed,
+    // because strict hosts that block WebAssembly would otherwise log an error on every page.
+    const { MeshoptDecoder } = await import('three/examples/jsm/libs/meshopt_decoder.module.js');
     loader.setMeshoptDecoder(MeshoptDecoder);
-    if (url.startsWith('data:')) {
-      // Single-file preview build: models are embedded, so decode them directly.
-      const bin = atob(url.slice(url.indexOf(',') + 1));
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      return loader.parseAsync(bytes.buffer, '');
-    }
     return new Promise((resolve, reject) => {
       loader.load(url, resolve, (e) => e.total && onProgress(e.loaded / e.total), reject);
     });
+  }
+
+  /**
+   * Static-preview models (`name.gltf.json`, see scripts/make-preview-models.mjs). Strict hosts block
+   * the loader from fetching the embedded data: URL, so unpack it here and hand the loader a .glb in
+   * memory. Textures are separate files next to the JSON and load normally.
+   */
+  async loadPreviewGLTF(loader, url, onProgress) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Couldn't fetch ${url} (${res.status})`);
+    const json = await res.json();
+    onProgress(0.9);
+    let bin = new Uint8Array(0);
+    const buffer = json.buffers?.[0];
+    if (buffer?.uri?.startsWith('data:')) {
+      const raw = atob(buffer.uri.slice(buffer.uri.indexOf(',') + 1));
+      bin = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) bin[i] = raw.charCodeAt(i);
+      delete buffer.uri;
+    }
+    const pad4 = (n) => (n + 3) & ~3;
+    const jsonBytes = new TextEncoder().encode(JSON.stringify(json));
+    const jsonLen = pad4(jsonBytes.length);
+    const binLen = pad4(bin.length);
+    const glb = new Uint8Array(12 + 8 + jsonLen + (bin.length ? 8 + binLen : 0));
+    const view = new DataView(glb.buffer);
+    view.setUint32(0, 0x46546c67, true); // "glTF"
+    view.setUint32(4, 2, true);
+    view.setUint32(8, glb.length, true);
+    view.setUint32(12, jsonLen, true);
+    view.setUint32(16, 0x4e4f534a, true); // "JSON"
+    glb.fill(0x20, 20, 20 + jsonLen); // pad with spaces
+    glb.set(jsonBytes, 20);
+    if (bin.length) {
+      view.setUint32(20 + jsonLen, binLen, true);
+      view.setUint32(24 + jsonLen, 0x004e4942, true); // "BIN"
+      glb.set(bin, 28 + jsonLen);
+    }
+    return loader.parseAsync(glb.buffer, url.slice(0, url.lastIndexOf('/') + 1));
   }
 
   /** Index parts and materials by normalized name; set up shadows; apply model rotation. */

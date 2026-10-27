@@ -20,8 +20,8 @@ export function buildLeadPayload(car, build, customerData) {
 
 /** @returns {Promise<{ ok: boolean, preview?: boolean }>} */
 export async function submitLead(payload) {
-  // The static previews (single file or shared page) have no server, so nothing is sent.
-  if (import.meta.env.MODE === 'singlefile' || import.meta.env.MODE === 'preview') {
+  // The static preview has no server, so nothing is sent.
+  if (import.meta.env.MODE === 'preview') {
     console.info('[preview] Lead not sent. Payload would be:', payload);
     await new Promise((r) => setTimeout(r, 500));
     return { ok: true, preview: true };

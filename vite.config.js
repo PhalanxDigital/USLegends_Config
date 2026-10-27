@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { viteSingleFile } from 'vite-plugin-singlefile';
 import submitLead from './netlify/functions/submit.mjs';
 
 /** Runs the Netlify lead function locally so `npm run dev` and `npm run preview` work without the Netlify CLI. */
@@ -30,16 +29,18 @@ function localLeadApi() {
 }
 
 export default defineConfig(({ mode }) => {
-  const single = mode === 'singlefile'; // one self-contained HTML file for sharing a preview
-  const staticPreview = single || mode === 'preview'; // shareable static copy, no lead server
+  // `--mode preview`: shareable static copy with no lead server (see scripts/make-preview-models.mjs).
+  // Asset names stay unhashed and nothing is inlined, so preview models find their texture files.
+  const preview = mode === 'preview';
   return {
     base: './',
-    plugins: [svelte(), localLeadApi(), single && viteSingleFile()].filter(Boolean),
+    plugins: [svelte(), localLeadApi()],
     assetsInclude: ['**/*.glb'],
     build: {
-      outDir: staticPreview ? 'dist-preview' : 'dist',
-      assetsInlineLimit: single ? Number.MAX_SAFE_INTEGER : 4096,
+      outDir: preview ? 'dist-preview' : 'dist',
+      assetsInlineLimit: preview ? 0 : 4096,
       chunkSizeWarningLimit: 1200,
+      rollupOptions: preview ? { output: { assetFileNames: 'assets/[name][extname]' } } : {},
     },
   };
 });

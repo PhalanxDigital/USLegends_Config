@@ -7,7 +7,6 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:single": "node scripts/make-preview-models.mjs && vite build --mode singlefile && node -e \"require('fs').rmSync('src/assets/models-preview',{recursive:true,force:true})\"",
     "preview": "vite preview",
     "models:placeholder": "node scripts/make-placeholder-models.mjs",
     "models:inspect": "node scripts/inspect-model.mjs",
@@ -30,7 +29,6 @@
     "playwright": "^1.63.0",
     "sharp": "^0.35.5",
     "svelte": "^5.57.2",
-    "vite": "^8.3.3",
-    "vite-plugin-singlefile": "^2.3.3"
+    "vite": "^8.3.3"
   }
 }
