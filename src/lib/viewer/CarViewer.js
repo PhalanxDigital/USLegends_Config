@@ -381,7 +381,7 @@ export class CarViewer {
       box.makeEmpty();
       for (const obj of this.find(cat.anchorNode ?? opt.node)) box.expandByObject(obj);
       if (box.isEmpty()) return null;
-      const [ax, ay, az] = opt.anchor ?? cat.anchor ?? [0.5, 0.5, 0.5];
+      const [ax, ay, az] = cat.anchor ?? [0.5, 0.5, 0.5];
       // config axes: x rear->front, y bottom->top, z right->left
       const point = new THREE.Vector3(
         THREE.MathUtils.lerp(box.min.x, box.max.x, ax),
