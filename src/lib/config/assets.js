@@ -3,8 +3,9 @@
 const thumbs = import.meta.glob('../../assets/thumbs/*', { eager: true, query: '?url', import: 'default' });
 // The single-file preview uses uncompressed copies (see scripts/make-preview-models.mjs).
 const PREVIEW = import.meta.env.MODE === 'singlefile' || import.meta.env.MODE === 'preview';
+// Preview copies are self-contained glTF JSON files named like "sedan.gltf.json".
 const models = PREVIEW
-  ? import.meta.glob('../../assets/models-preview/*.glb', { eager: true, query: '?url', import: 'default' })
+  ? import.meta.glob('../../assets/models-preview/*.gltf.json', { eager: true, query: '?url', import: 'default' })
   : import.meta.glob('../../assets/models/*.glb', { eager: true, query: '?url', import: 'default' });
 
 function pick(map, folder, name) {
@@ -14,4 +15,5 @@ function pick(map, folder, name) {
 }
 
 export const thumb = (name) => pick(thumbs, 'thumbs', name);
-export const model = (name) => pick(models, PREVIEW ? 'models-preview' : 'models', name);
+export const model = (name) =>
+  PREVIEW ? pick(models, 'models-preview', name.replace(/\.glb$/, '.gltf.json')) : pick(models, 'models', name);

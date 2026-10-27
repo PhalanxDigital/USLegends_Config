@@ -16,7 +16,7 @@ npm run dev        # http://localhost:5173
 | `npm run dev` | Local development server, including the lead form (dry run) |
 | `npm run build` | Production build into `dist/` (what Netlify serves) |
 | `npm run preview` | Serve the production build locally |
-| `npm run build:preview` | Static copy in `dist-preview/` for sharing a preview without a server (lead form does not send; models without Meshopt compression) |
+| `npm run build:preview` | Static copy in `dist-preview/` for sharing a preview without a server (lead form does not send; models as uncompressed glTF JSON, for hosts that block .glb files or WebAssembly) |
 | `npm run build:single` | Same, inlined into one HTML file (only for small models) |
 | `npm run models:c4d -- export.gltf tex/` | Build `sedan.glb` and `coupe.glb` from the Cinema 4D export ([details](#rebuilding-the-models-from-cinema-4d)) |
 | `npm run models:inspect -- file.glb` | List a model's part and material names |
