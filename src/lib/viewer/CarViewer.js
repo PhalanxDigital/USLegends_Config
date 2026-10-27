@@ -17,6 +17,27 @@ import { createStudioEnvironment } from './studioEnvironment.js';
 
 const DEG = Math.PI / 180;
 
+/**
+ * The models are Meshopt-compressed. The fast decoder is WebAssembly; pages with strict security
+ * rules (some company networks, the claude.ai preview) block WebAssembly, so fall back to the
+ * slower pure-JavaScript decoder there. Both load only when first needed.
+ */
+let meshoptDecoder;
+function getMeshoptDecoder() {
+  meshoptDecoder ??= (async () => {
+    try {
+      const { MeshoptDecoder } = await import('three/examples/jsm/libs/meshopt_decoder.module.js');
+      await MeshoptDecoder.ready;
+      return MeshoptDecoder;
+    } catch {
+      console.info('[viewer] WebAssembly is blocked here; using the JavaScript Meshopt decoder.');
+      const { MeshoptDecoder } = await import('./vendor/meshopt_decoder_reference.js');
+      return MeshoptDecoder;
+    }
+  })();
+  return meshoptDecoder;
+}
+
 /** "RIMS( BEADLOCK)_773" -> "rimsbeadlock". Used for every name lookup. */
 export const normalizeName = (name) =>
   String(name ?? '')
@@ -156,20 +177,17 @@ export class CarViewer {
 
   async loadGLTF(url, onProgress) {
     const loader = new GLTFLoader();
+    loader.setMeshoptDecoder(await getMeshoptDecoder());
     if (/\.json(\?|#|$)/.test(url)) return this.loadPreviewGLTF(loader, url, onProgress);
-    // The production models are Meshopt-compressed. The decoder (WebAssembly) loads only when needed,
-    // because strict hosts that block WebAssembly would otherwise log an error on every page.
-    const { MeshoptDecoder } = await import('three/examples/jsm/libs/meshopt_decoder.module.js');
-    loader.setMeshoptDecoder(MeshoptDecoder);
     return new Promise((resolve, reject) => {
       loader.load(url, resolve, (e) => e.total && onProgress(e.loaded / e.total), reject);
     });
   }
 
   /**
-   * Static-preview models (`name.gltf.json`, see scripts/make-preview-models.mjs). Strict hosts block
-   * the loader from fetching the embedded data: URL, so unpack it here and hand the loader a .glb in
-   * memory. Textures are separate files next to the JSON and load normally.
+   * Static-preview models (`name.gltf.json`, see scripts/make-preview-models.mjs): the production .glb
+   * repackaged as JSON. Strict hosts block the loader from fetching the embedded data: URL, so unpack
+   * it here and hand the loader a .glb in memory. Textures are separate files next to the JSON.
    */
   async loadPreviewGLTF(loader, url, onProgress) {
     const res = await fetch(url);
