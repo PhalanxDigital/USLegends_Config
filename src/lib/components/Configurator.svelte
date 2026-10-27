@@ -1,7 +1,7 @@
 <script>
   import { onMount, untrack } from 'svelte';
   import { CarViewer } from '../viewer/CarViewer.js';
-  import { PAINT_COLORS, USING_PLACEHOLDER_MODELS } from '../config/cars.js';
+  import { PAINT_COLORS } from '../config/cars.js';
   import Icons from './Icons.svelte';
 
   /** build = { selections: { categoryId: optionId }, colorId } for the current car */
@@ -114,7 +114,7 @@
       <div class="status" role="alert"><p>The 3D model couldn't load. Please refresh the page.</p></div>
     {/if}
 
-    {#if USING_PLACEHOLDER_MODELS}
+    {#if car.placeholderModel}
       <p class="placeholder-note">Placeholder 3D model · final models pending</p>
     {/if}
   </div>

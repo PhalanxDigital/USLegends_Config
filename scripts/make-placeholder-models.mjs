@@ -461,7 +461,11 @@ async function writeGLB(file, parts) {
   console.log(`${path.basename(file)}  ${(bytes.byteLength / 1024).toFixed(0)} KB`);
 }
 
+// The sedan and coupe now come from the Cinema 4D scene (npm run models:c4d), so by default only the
+// Bandolero stand-in is written. `--all` also writes stand-in sedan and coupe files (overwrites the real ones).
 fs.mkdirSync(OUT_DIR, { recursive: true });
-await writeGLB(path.join(OUT_DIR, 'sedan.glb'), sedan());
-await writeGLB(path.join(OUT_DIR, 'coupe.glb'), coupe());
+if (process.argv.includes('--all')) {
+  await writeGLB(path.join(OUT_DIR, 'sedan.glb'), sedan());
+  await writeGLB(path.join(OUT_DIR, 'coupe.glb'), coupe());
+}
 await writeGLB(path.join(OUT_DIR, 'bandolero.glb'), bandolero());

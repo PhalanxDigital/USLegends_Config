@@ -11,13 +11,14 @@
  *   bounding box of the selected part (x: rear to front, y: bottom to top,
  *   z: right side to left side).
  * - Optional per car: `modelRotationDeg: [x, y, z]` if a model loads facing the
- *   wrong way (the app expects the front toward +X, Y up), and
- *   `paintKeepsTexture: true` to keep a paint material's texture when recoloring.
+ *   wrong way (the app expects the front toward +X, Y up),
+ *   `paintKeepsTexture: true` to keep a paint material's texture when recoloring, and
+ *   `placeholderModel: true` to show a "placeholder model" notice on the viewer.
+ *
+ * The sedan and coupe models are built from the artist's Cinema 4D scene by
+ * `npm run models:c4d` (see README). Their part names are the Cinema 4D object names.
  */
 import { thumb, model } from './assets.js';
-
-/** Set to false once the real 3D models are in place. Shows a small notice on the viewer. */
-export const USING_PLACEHOLDER_MODELS = true;
 
 /** Body colors. `swatch` is the button color, `paint` is applied to the paint materials. */
 export const PAINT_COLORS = [
@@ -58,11 +59,11 @@ const LEGENDS_WHEELS = {
   id: 'wheel',
   title: 'Wheels',
   leadKey: 'wheel',
-  anchor: [0.93, 0.5, 1.0],
+  anchor: [0.915, 0.5, 1.0], // front-right hub
   options: [
-    { id: 'basset', label: 'Basset', node: 'RIMS (BASSET)', thumb: thumb('Basset.png') },
-    { id: 'beadlock', label: 'Beadlock', node: 'RIMS (BEADLOCK)', thumb: thumb('Beadlock.png') },
-    { id: 'aero', label: 'Aero', node: 'RIMS (AERO)', thumb: thumb('Aero.png') },
+    { id: 'basset', label: 'Basset', node: 'WHEELS (BASSET)', thumb: thumb('Basset.png') },
+    { id: 'beadlock', label: 'Beadlock', node: 'WHEELS (BEADLOCK)', thumb: thumb('Beadlock.png') },
+    { id: 'aero', label: 'Aero', node: 'WHEELS (AERO)', thumb: thumb('Aero.png') },
   ],
 };
 
@@ -70,7 +71,7 @@ const LEGENDS_TIRES = {
   id: 'tire',
   title: 'Tires',
   leadKey: 'tire',
-  anchor: [0.97, 0.3, 0.96],
+  anchor: [0.915, 0.86, 1.0], // upper sidewall of the front-right tire
   options: [
     { id: 'asphalt', label: 'Asphalt', node: 'TIRES (ASPHALT)', thumb: thumb('Asphalt.png') },
     { id: 'dirt', label: 'Dirt', node: 'TIRES (DIRT)', thumb: thumb('Dirt.png') },
@@ -97,6 +98,8 @@ export const CARS = [
     tabLabel: 'Bandolero',
     leadName: 'Bandolero',
     model: model('bandolero.glb'),
+    // Not in the Cinema 4D files we have; still the generated stand-in.
+    placeholderModel: true,
     paintMaterials: ['BODY PAINT'],
     categories: [],
     camera: { ...CAMERA },
@@ -106,8 +109,7 @@ export const CARS = [
     tabLabel: 'Legends Coupe',
     leadName: 'Legends Coupe',
     model: model('coupe.glb'),
-    // TODO when the real coupe model arrives: confirm part and material names with models:inspect.
-    paintMaterials: ['BODY PAINT', 'FRONT END PAINT'],
+    paintMaterials: ['BODY PAINT'],
     categories: [
       {
         id: 'body',
@@ -131,9 +133,7 @@ export const CARS = [
     tabLabel: 'Legends Sedan',
     leadName: 'Legends Sedan',
     model: model('sedan.glb'),
-    // Part names match the real Sketchfab sedan. Its paint materials are the 13th and 19th
-    // in its material list; put their names here once the real file is inspected.
-    paintMaterials: ['BODY PAINT', 'FRONT END PAINT'],
+    paintMaterials: ['BODY PAINT'],
     categories: [
       {
         id: 'body',

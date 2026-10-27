@@ -2,7 +2,7 @@
 // single-file preview build). Drop new files into src/assets/thumbs or src/assets/models.
 const thumbs = import.meta.glob('../../assets/thumbs/*', { eager: true, query: '?url', import: 'default' });
 // The single-file preview uses uncompressed copies (see scripts/make-preview-models.mjs).
-const PREVIEW = import.meta.env.MODE === 'singlefile';
+const PREVIEW = import.meta.env.MODE === 'singlefile' || import.meta.env.MODE === 'preview';
 const models = PREVIEW
   ? import.meta.glob('../../assets/models-preview/*.glb', { eager: true, query: '?url', import: 'default' })
   : import.meta.glob('../../assets/models/*.glb', { eager: true, query: '?url', import: 'default' });

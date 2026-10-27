@@ -2,7 +2,7 @@
 
 A rebuild of the [Sketchfab-based configurator](https://github.com/tattooprojects/US-Legends-Configurator) with the same interface and interactions, running on [Three.js](https://threejs.org) instead of Sketchfab. There is no Sketchfab account, iframe or watermark dependency. Everything is served from this site.
 
-> **Status:** working end to end on placeholder 3D models. The placeholders use the same part names as the real Sketchfab sedan, so the real files drop in without code changes. See [Dropping in the real models](#dropping-in-the-real-models).
+> **Status:** the Legends Sedan and Legends Coupe use the real models, built from the artist's Cinema 4D scene. The Bandolero still uses a generated stand-in, because it isn't in the Cinema 4D files we have. See [Rebuilding the models from Cinema 4D](#rebuilding-the-models-from-cinema-4d).
 
 ## Run it
 
@@ -16,10 +16,12 @@ npm run dev        # http://localhost:5173
 | `npm run dev` | Local development server, including the lead form (dry run) |
 | `npm run build` | Production build into `dist/` (what Netlify serves) |
 | `npm run preview` | Serve the production build locally |
-| `npm run build:single` | One self-contained HTML file in `dist-preview/` for sharing a preview (lead form does not send; uses uncompressed model copies) |
+| `npm run build:preview` | Static copy in `dist-preview/` for sharing a preview without a server (lead form does not send; models without Meshopt compression) |
+| `npm run build:single` | Same, inlined into one HTML file (only for small models) |
+| `npm run models:c4d -- export.gltf tex/` | Build `sedan.glb` and `coupe.glb` from the Cinema 4D export ([details](#rebuilding-the-models-from-cinema-4d)) |
 | `npm run models:inspect -- file.glb` | List a model's part and material names |
-| `npm run models:optimize -- in.glb out.glb` | Compress a raw model export for the web |
-| `npm run models:placeholder` | Regenerate the placeholder models |
+| `npm run models:optimize -- in.glb out.glb` | Compress any other raw model export for the web |
+| `npm run models:placeholder` | Regenerate the stand-in models (the Bandolero still uses one) |
 
 ## How it's organized
 
@@ -31,30 +33,36 @@ src/lib/lead.js               ← builds and sends the lead
 netlify/functions/submit.mjs  ← forwards leads to uslegendcars.com
 src/assets/models/            ← one .glb per car
 src/assets/thumbs/            ← option thumbnails
-scripts/                      ← model tools (inspect, optimize, placeholder generator)
+scripts/                      ← model tools (Cinema 4D build, inspect, optimize, stand-ins)
+scripts/cinema4d/             ← export script to run inside Cinema 4D
+scripts/c4d-materials.mjs     ← web materials for the Cinema 4D scene
 ```
 
 ### How the 3D works (same idea as the Sketchfab build)
 
 Each car is **one model file containing every option**, stacked in the same space. Choosing an option hides the other parts in that group and shows the one picked. Color recolors the paint materials. The difference from the Sketchfab build is that parts and materials are found **by name**, not by numeric ID or list position. A re-exported model can't silently break the mapping, and the browser console warns about any name in the config that the model doesn't contain.
 
-## Dropping in the real models
+## Rebuilding the models from Cinema 4D
 
-1. **Export** each car from the source files (Cinema 4D: *File › Export › glTF*, binary `.glb`), or download the glTF version from the Sketchfab model page. Every option must be its own named object, just as it is today.
-2. **Optimize:**
+The sedan and coupe come from one Cinema 4D scene, **Legend Cars.c4d**. It holds both cars together: shared front ends, wheels, tires and exhausts, plus each car's own bodies and chassis. The artist rendered it with Octane, so its materials don't export. The pipeline keeps their names and swaps in web materials.
+
+1. **Export from Cinema 4D** (2023 or newer; the free trial works). Open *Extensions › Script Manager*, load `scripts/cinema4d/export_legend_cars.py`, run it, and pick `Legend Cars.c4d`. The script never changes the .c4d file. It writes a `web-export` folder next to it containing `legend-cars-named.gltf`, a preview image of every material, and `materials.txt`.
+2. **Build the web models:**
    ```bash
-   npm run models:optimize -- models-source/sedan.glb src/assets/models/sedan.glb
+   npm run models:c4d -- "path/to/web-export/legend-cars-named.gltf" "path/to/tex"
    ```
-   Raw exports can go in `models-source/`, which git ignores.
-3. **Inspect** and copy names into `src/lib/config/cars.js`:
-   ```bash
-   npm run models:inspect -- src/assets/models/sedan.glb
-   ```
-   - Each option's `node` must match a part name. Matching ignores case, spaces, punctuation and Sketchfab's `_123` suffixes.
-   - Put the body-paint material names in `paintMaterials`. On the real sedan they are the 13th and 19th materials.
-4. **Orient:** if the car loads facing the wrong way or lying on its side, set `modelRotationDeg: [x, y, z]` on that car in the config, for example `[-90, 0, 0]` for a Z-up export. The app expects the front to point toward +X with Y up.
-5. **Tune** the hotspot `anchor` positions and `camera` values in the config.
-6. **Finish:** set `USING_PLACEHOLDER_MODELS = false` to remove the "placeholder" notice.
+   `tex` is the texture folder that ships with the .c4d file; the tire sidewall lettering comes from it. This writes `src/assets/models/sedan.glb` and `coupe.glb`. For each car it:
+   - keeps only that car's parts
+   - applies the web materials
+   - merges small pieces
+   - simplifies the geometry from about 4.2 million to about 430,000 triangles (about 3.9 MB per car)
+   - turns the car to face +X on the ground
+3. **If the scene changes**, check these:
+   - New or renamed materials: map their numbers in `scripts/c4d-materials.mjs`. The previews and `materials.txt` show what each number is.
+   - New options: add them to `src/lib/config/cars.js`. Their `node` is the Cinema 4D object name; `npm run models:inspect -- src/assets/models/sedan.glb` lists the names.
+   - Too much or too little detail: adjust `simplifyError` in `scripts/build-c4d-models.mjs`.
+
+Other models (the Bandolero, or anything exported straight to glTF) go through `npm run models:optimize` instead. If one loads facing the wrong way, set `modelRotationDeg: [x, y, z]` on that car in the config; the app expects the front toward +X with Y up. Remove `placeholderModel: true` when a real model replaces a stand-in.
 
 Open the site with `?debug` (for example `http://localhost:5173/?debug`) to print every part and material name in the browser console.
 
@@ -100,7 +108,8 @@ The variable controls where submissions go:
 
 ## Open items
 
-- [ ] Real model files for the sedan, coupe and Bandolero. Then confirm part and material names, orientation and hotspot anchors.
+- [ ] A real Bandolero model. It isn't in the Cinema 4D files; ask the artist, or download it from the Sketchfab account (needs a Pro plan).
+- [ ] Review the web materials against the original renders. They were matched by eye from the Octane material previews, and a few small parts may need a different finish (`scripts/c4d-materials.mjs`).
 - [ ] Look-development against the current Sketchfab rendering (lighting, reflections, paint finish).
 - [ ] Confirm with US Legends that their endpoint accepts the new `car` field and the corrected "34 Chevy" label.
 - [ ] Optional label check: "Basset" vs the brand name "Bassett" (it's sent with leads).

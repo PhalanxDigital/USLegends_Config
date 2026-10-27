@@ -143,7 +143,10 @@ export class CarViewer {
     this.checkConfig(car);
     this.frame(car);
     this.cb.onLoading?.({ loading: false, progress: 1 });
-    if (new URLSearchParams(window.location.search).has('debug')) console.info(`[viewer] ${car.id}`, this.describe());
+    if (new URLSearchParams(window.location.search).has('debug')) {
+      console.info(`[viewer] ${car.id}`, this.describe());
+      window.__viewer = this; // for inspecting from the browser console
+    }
     this.invalidate();
     return true;
   }

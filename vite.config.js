@@ -31,12 +31,13 @@ function localLeadApi() {
 
 export default defineConfig(({ mode }) => {
   const single = mode === 'singlefile'; // one self-contained HTML file for sharing a preview
+  const staticPreview = single || mode === 'preview'; // shareable static copy, no lead server
   return {
     base: './',
     plugins: [svelte(), localLeadApi(), single && viteSingleFile()].filter(Boolean),
     assetsInclude: ['**/*.glb'],
     build: {
-      outDir: single ? 'dist-preview' : 'dist',
+      outDir: staticPreview ? 'dist-preview' : 'dist',
       assetsInlineLimit: single ? Number.MAX_SAFE_INTEGER : 4096,
       chunkSizeWarningLimit: 1200,
     },
