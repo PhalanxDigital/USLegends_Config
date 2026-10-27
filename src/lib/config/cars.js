@@ -14,6 +14,7 @@
  *   wrong way (the app expects the front toward +X, Y up),
  *   `paintKeepsTexture: true` to keep a paint material's texture when recoloring, and
  *   `placeholderModel: true` to show a "placeholder model" notice on the viewer.
+ * - Optional per category: `drawOnTop: true` makes its parts win where they overlap other parts.
  *
  * The sedan and coupe models are built from the artist's Cinema 4D scene by
  * `npm run models:c4d` (see README). Their part names are the Cinema 4D object names.
@@ -31,10 +32,10 @@ export const PAINT_COLORS = [
 
 /** Camera behavior shared by all cars (each car can override any value). */
 const CAMERA = {
-  fov: 30,
+  fov: 42, // a fairly wide lens, like the Sketchfab version (which used 60)
   startAzimuthDeg: 38, // where the camera starts, measured from the front of the car toward its left side
-  elevationDeg: 10, // tilt is locked at this angle, like the Sketchfab version
-  distance: 1.15, // 1 = the whole car just fits; larger = further away
+  elevationDeg: 7, // tilt is locked at this angle, like the Sketchfab version
+  distance: 0.98, // 1 = the whole car just fits; larger = further away
   mobileDistance: 1.0,
   minDistance: 0.85,
   maxDistance: 1.7,
@@ -115,6 +116,7 @@ export const CARS = [
         id: 'body',
         title: 'Body Style',
         leadKey: 'body',
+        drawOnTop: true, // the body shell wins where the front ends overlap it at the cowl
         anchor: [0.62, 0.62, 1.0],
         options: [
           { id: 'chevy34', label: '34 Chevy', node: '34 CHEVY COUPE BODY', thumb: thumb('34ChevyCBody.png') },
@@ -139,6 +141,7 @@ export const CARS = [
         id: 'body',
         title: 'Body Style',
         leadKey: 'body',
+        drawOnTop: true, // the body shell wins where the front ends overlap it at the cowl
         anchor: [0.62, 0.62, 1.0],
         options: [
           { id: 'ford37', label: '37 Ford', node: '37 FORD SEDAN BODY', thumb: thumb('37FordSBody.png') },

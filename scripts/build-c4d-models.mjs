@@ -15,9 +15,10 @@
  */
 import { NodeIO, getBounds } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, KHRMaterialsClearcoat } from '@gltf-transform/extensions';
-import { dedup, prune, weld, quantize, meshopt, textureCompress, join, simplifyPrimitive, unpartition, transformPrimitive, compactPrimitive } from '@gltf-transform/functions';
+import { dedup, prune, weld, quantize, meshopt, textureCompress, join, simplifyPrimitive, unpartition, transformPrimitive } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
 import * as THREE from 'three';
+import { toCreasedNormals, mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import sharp from 'sharp';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -43,11 +44,12 @@ const ONLY = {
 /** Nodes under CARS that only group options; their children are the options. */
 const CONTAINERS = ['TIRES', 'EXHAUST'];
 /** Simplification tolerance per part, as a fraction of the part's size. Visible paint gets the tightest. */
-function simplifyError(groupName) {
+function simplifyError(groupName, materialName) {
   const n = norm(groupName);
-  if (n.includes('chassis')) return 0.0025; // mostly hidden under the body
-  if (n.includes('wheels')) return 0.004; // rims, hubs and brakes: many small hard-edged pieces
-  return 0.0004; // bodies, front ends, tires: smooth silhouettes that show facets quickly
+  if (n.includes('chassis')) return 0.0012; // mostly hidden; the engine shows through the open hood sides
+  if (n.includes('wheels')) return materialName === 'CAST IRON' ? 0.0012 : 0.0002; // hubs/brakes sit behind the rim
+  if (n.includes('tires')) return 0.00005; // round silhouettes show facets first
+  return 0.00015; // bodies and front ends: smooth paint shows faceting in reflections
 }
 
 await Promise.all([MeshoptEncoder.ready, MeshoptDecoder.ready, MeshoptSimplifier.ready]);
@@ -68,14 +70,20 @@ const disposeTree = (node) => {
   node.dispose();
 };
 
-/** Topology-ignoring simplification (meshoptimizer "sloppy"), for clusters of tiny parts. */
-function sloppySimplify(doc, prim, ratio, error) {
-  const position = prim.getAttribute('POSITION');
-  const src = prim.getIndices();
-  const target = Math.floor((src.getCount() * ratio) / 3) * 3;
-  const [dst] = MeshoptSimplifier.simplifySloppy(new Uint32Array(src.getArray()), new Float32Array(position.getArray()), 3, null, target, error);
-  prim.setIndices(doc.createAccessor().setType('SCALAR').setArray(dst).setBuffer(src.getBuffer()));
-  compactPrimitive(prim);
+const PAINT_CREASE_DEG = 40;
+
+/** Replaces a primitive's normals with smooth ones, splitting vertices only at sharp creases. */
+function recomputeNormals(doc, prim, creaseDeg) {
+  const pos = prim.getAttribute('POSITION');
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos.getArray()), 3));
+  if (prim.getIndices()) geo.setIndex(new THREE.BufferAttribute(new Uint32Array(prim.getIndices().getArray()), 1));
+  const creased = mergeVertices(toCreasedNormals(geo, (creaseDeg * Math.PI) / 180), 1e-6);
+  const buffer = pos.getBuffer();
+  for (const s of prim.listSemantics()) if (s !== 'POSITION' && s !== 'NORMAL') prim.setAttribute(s, null);
+  prim.setAttribute('POSITION', doc.createAccessor().setType('VEC3').setArray(new Float32Array(creased.attributes.position.array)).setBuffer(buffer));
+  prim.setAttribute('NORMAL', doc.createAccessor().setType('VEC3').setArray(new Float32Array(creased.attributes.normal.array)).setBuffer(buffer));
+  prim.setIndices(doc.createAccessor().setType('SCALAR').setArray(new Uint32Array(creased.index.array)).setBuffer(buffer));
 }
 
 /** Tire sidewall textures: base color, normal, and roughness packed into glTF's metal/rough layout. */
@@ -115,7 +123,7 @@ for (const car of Object.keys(ONLY)) {
       .setRoughnessFactor(d.rough)
       .setDoubleSided(true);
     if (d.alpha !== undefined && d.alpha < 1) m.setAlphaMode('BLEND');
-    if (d.clearcoat) m.setExtension('KHR_materials_clearcoat', clearcoat.createClearcoat().setClearcoatFactor(d.clearcoat).setClearcoatRoughnessFactor(0.05));
+    if (d.clearcoat) m.setExtension('KHR_materials_clearcoat', clearcoat.createClearcoat().setClearcoatFactor(d.clearcoat).setClearcoatRoughnessFactor(d.clearcoatRough ?? 0.05));
     web[name] = m;
   }
   const unknown = new Set();
@@ -166,19 +174,21 @@ for (const car of Object.keys(ONLY)) {
   }
   await doc.transform(prune(), dedup({ keepUniqueNames: true }), join({ keepNamed: false }), weld());
 
-  // 4. simplify. The wheel hubs and brakes are hundreds of tiny separate pieces that the normal
-  //    simplifier can't collapse, so large wheel meshes also get a topology-ignoring pass.
+  // 4. simplify, with tolerances tight enough that silhouettes and reflections stay smooth
   const before = triCount(cars);
-  for (const g of groups) {
-    const error = simplifyError(g.getName());
-    const isWheel = norm(g.getName()).includes('wheels');
+  for (const g of groups)
     for (const n of g.listChildren())
       for (const prim of n.getMesh()?.listPrimitives() ?? []) {
+        const error = simplifyError(g.getName(), prim.getMaterial()?.getName());
         simplifyPrimitive(prim, { simplifier: MeshoptSimplifier, ratio: 0, error });
-        const tris = prim.getIndices().getCount() / 3;
-        if (isWheel && tris > 40000) sloppySimplify(doc, prim, 40000 / tris, error);
       }
-  }
+
+  // 4b. paint: recompute smooth normals. The exported normals have patches that shade differently
+  //     from their surroundings, which shows as blotches in the reflections. Creases sharper than
+  //     PAINT_CREASE_DEG stay hard.
+  for (const mesh of root.listMeshes())
+    for (const prim of mesh.listPrimitives())
+      if (WEB_MATERIALS[prim.getMaterial()?.getName()]?.paint) recomputeNormals(doc, prim, PAINT_CREASE_DEG);
 
   // 5. front toward +X, wheels on the ground, centered
   cars.setTranslation([0, 0, 0]).setScale([1, 1, 1]).setRotation([0, -Math.SQRT1_2, 0, Math.SQRT1_2]);

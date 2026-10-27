@@ -13,7 +13,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { createStudioEnvironment } from './studioEnvironment.js';
 
 const DEG = Math.PI / 180;
 
@@ -50,8 +50,9 @@ export class CarViewer {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.NeutralToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    // Filmic tone mapping: soft highlight roll-off on glossy paint, like a photo studio render.
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.7;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.setClearColor(0x000000, 0);
@@ -64,14 +65,16 @@ export class CarViewer {
 
     const scene = new THREE.Scene();
     const pmrem = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environmentIntensity = 0.9;
+    // Reflections come from a virtual car-photography studio (see studioEnvironment.js).
+    scene.environment = pmrem.fromScene(createStudioEnvironment(), 0).texture;
+    scene.environmentIntensity = 1.15;
     pmrem.dispose();
     this.scene = scene;
 
     this.camera = new THREE.PerspectiveCamera(35, 1, 0.01, 1000);
 
-    const key = new THREE.DirectionalLight(0xffffff, 1.4);
+    // The studio reflections do most of the lighting; the key light adds shape and casts the floor shadow.
+    const key = new THREE.DirectionalLight(0xffffff, 0.9);
     key.castShadow = true;
     key.shadow.mapSize.set(2048, 2048);
     key.shadow.radius = 4;
@@ -79,12 +82,12 @@ export class CarViewer {
     scene.add(key, key.target);
     this.key = key;
     // soft fill from behind so the far side of the car doesn't go flat gray
-    const fill = new THREE.DirectionalLight(0xffffff, 0.6);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.3);
     scene.add(fill, fill.target);
     this.fill = fill;
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x303030, 0.35));
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x303030, 0.15));
 
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShadowMaterial({ opacity: 0.45 }));
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShadowMaterial({ opacity: 0.55 }));
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
@@ -145,6 +148,7 @@ export class CarViewer {
     if (new URLSearchParams(window.location.search).has('debug')) {
       console.info(`[viewer] ${car.id}`, this.describe());
       window.__viewer = this; // for inspecting from the browser console
+      window.__THREE = THREE;
     }
     this.invalidate();
     return true;
@@ -216,8 +220,31 @@ export class CarViewer {
       if (!map.has(key)) map.set(key, new Set());
       map.get(key).add(value);
     };
+    root.traverse((obj) => add(index, obj.name, obj));
+
+    // Parts of categories marked `drawOnTop` win wherever they overlap other parts (the front ends
+    // overlap the bodies at the cowl). Without this, the overlap flickers in light and dark patches.
+    const onTop = new Map();
+    for (const cat of car.categories.filter((c) => c.drawOnTop)) {
+      for (const opt of cat.options) {
+        for (const node of index.get(normalizeName(opt.node)) ?? []) {
+          node.traverse((obj) => {
+            if (!obj.isMesh) return;
+            obj.material = (Array.isArray(obj.material) ? obj.material : [obj.material]).map((m) => {
+              if (!onTop.has(m)) {
+                const c = m.clone();
+                Object.assign(c, { polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });
+                onTop.set(m, c);
+              }
+              return onTop.get(m);
+            });
+            if (obj.material.length === 1) obj.material = obj.material[0];
+          });
+        }
+      }
+    }
+
     root.traverse((obj) => {
-      add(index, obj.name, obj);
       if (obj.isMesh) {
         obj.castShadow = true;
         obj.receiveShadow = false;

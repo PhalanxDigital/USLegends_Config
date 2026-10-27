@@ -7,15 +7,15 @@
  * maps those numbers to web (PBR) materials matched by eye to the previews.
  *
  * color: linear RGB 0..1 · metal/rough: 0..1 · alpha < 1 makes it see-through
- * clearcoat: lacquer layer (paint) · paint: true marks the material the color picker changes
+ * clearcoat: lacquer layer (paint), clearcoatRough: its roughness · paint: true marks the material the color picker changes
  */
 export const WEB_MATERIALS = {
-  'BODY PAINT': { color: [0.8, 0.8, 0.8], metal: 0.0, rough: 0.3, clearcoat: 1, paint: true },
-  'BLACK GLOSS': { color: [0.02, 0.02, 0.02], metal: 0.3, rough: 0.28 },
+  'BODY PAINT': { color: [0.8, 0.8, 0.8], metal: 0.0, rough: 0.4, clearcoat: 1, clearcoatRough: 0.03, paint: true },
+  'BLACK GLOSS': { color: [0.05, 0.052, 0.054], metal: 0.5, rough: 0.45 },
   'DARK MATTE': { color: [0.05, 0.05, 0.05], metal: 0.0, rough: 0.8 },
   'DARK SATIN': { color: [0.12, 0.12, 0.12], metal: 0.2, rough: 0.5 },
-  'TIRE RUBBER': { color: [0.035, 0.035, 0.035], metal: 0.0, rough: 0.88 },
-  'TIRE SIDEWALL': { color: [0.04, 0.04, 0.04], metal: 0.0, rough: 0.85, tireTextures: true },
+  'TIRE RUBBER': { color: [0.04, 0.04, 0.04], metal: 0.0, rough: 0.82 },
+  'TIRE SIDEWALL': { color: [0.04, 0.04, 0.04], metal: 0.0, rough: 0.82, tireTextures: true },
   'BRUSHED ALUMINUM': { color: [0.78, 0.78, 0.79], metal: 1.0, rough: 0.35 },
   'DARK ALUMINUM': { color: [0.22, 0.22, 0.22], metal: 1.0, rough: 0.38 },
   'POLISHED ALUMINUM': { color: [0.9, 0.9, 0.91], metal: 1.0, rough: 0.15 },
